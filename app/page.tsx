@@ -1,7 +1,9 @@
-import Image from 'next/image'
+'use client'
 import Camera from '../public/cam_square.svg'
 import Video from '../public/Video.svg'
 import { Button } from '@/components/Button'
+import { IconTile } from '@/components/IconTile'
+import Link from 'next/link'
 
 export default function Home() {
   return (
@@ -10,16 +12,12 @@ export default function Home() {
         <h2 className="text-3xl mb-2 font-bold"> Welcome! </h2>
         <span className="font-semibold"> What do you want to use this device for? </span>
       </div>
-      <div className="rounded-xl w-40 h-40 bg-zinc-700 flex flex-col justify-center items-center cursor-pointer transition border-none hover:border-2 hover:border-lime-300 hover:border-solid hover:text-lime-300">
-        <Image src={Camera} alt="Camera" className='mb-2'/>
-
-        <span> Use As Camera </span>
-      </div>
-
-      <div className="rounded-xl w-40 h-40 bg-zinc-700 flex flex-col justify-center items-center cursor-pointer transition hover:border-2 hover:border-lime-300 hover:border-solid hover:text-lime-300">
-        <Image src={Video} alt="Video" className="mb-2" />
-        <span> See Recordings </span>
-      </div>
+      <Link href="/camera">
+        <IconTile icon={Camera} text="Use As Camera" />
+      </Link>
+      <Link href="/recordings">
+        <IconTile icon={Video} text="See Recordings" />
+      </Link>
 
       <div className="flex flex-row">
         <Button> Log In </Button>

@@ -17,6 +17,10 @@
 }
 
 body {
+  max-width: min(100vw, 450px);
+  min-width: 280px;
+  max-height: min(100vh, 700px);
+  margin: 0 auto;
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
