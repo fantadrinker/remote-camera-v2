@@ -1,3 +1,7 @@
+const wait = (delayInMS: number) => {
+  return new Promise(resolve => setTimeout(resolve, delayInMS))
+}
+
 export const openStream = async (
   vid: HTMLMediaElement,
 ) => {
@@ -49,4 +53,34 @@ export const openStream = async (
     console.log('error opening camera: ' + error)
     throw new Error(msg)
   }
+}
+
+export const recordStream = (
+  stream: MediaStream,
+  lengthInMS: number,
+  log: (msg: string) => void = console.log
+) => {
+  let recorder = new MediaRecorder(stream)
+  let data: Array<Blob> = []
+
+  recorder.ondataavailable = event => data.push(event.data)
+  recorder.start()
+  log(`${recorder.state} for ${lengthInMS / 1000} seconds…`)
+
+  let stopped = new Promise((resolve, reject) => {
+    recorder.onstop = resolve
+    recorder.onerror = event => reject(event)
+  })
+
+  let recorded = wait(lengthInMS).then(() => {
+    if (recorder.state === 'recording') {
+      recorder.stop()
+    }
+  })
+
+  return Promise.all([stopped, recorded]).then(() => 
+    new Blob(data, {
+      type: 'video/webm'
+    })
+  )
 }

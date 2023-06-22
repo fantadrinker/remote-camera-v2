@@ -1,9 +1,10 @@
 'use client'
 import { Button, ButtonSize } from '@/components/Button'
-import React, { useRef , useState} from 'react'
-import { openStream } from './helpers'
+import React, { useEffect, useRef, useState } from 'react'
+import { openStream, recordStream } from './helpers'
 import { Input, InputSize } from '@/components/Input'
 import { Select } from '@/components/Select'
+import { uploadVideo } from './actions'
 
 
 enum CameraState {
@@ -12,12 +13,54 @@ enum CameraState {
   Opened,
 }
 
+enum TimeUnit {
+  Seconds = 'seconds',
+  Minutes = 'minutes',
+  Hours = 'hours',
+}
+
+interface RecordingOptions {
+  recordUntil: number
+  recordEvery: number
+  recordEveryUnit: TimeUnit
+  recordLength: number
+  recordLengthUnit: TimeUnit
+}
+
+const UNIT_VALUES_TO_MS = Object.freeze({
+  [TimeUnit.Seconds]: 1000,
+  [TimeUnit.Minutes]: 1000 * 60,
+  [TimeUnit.Hours]: 1000 * 60 * 60,
+})
+
+
 const CameraPage = () => {
   const [error, setError] = useState("")
   const [cameraState, setCameraState] = useState<CameraState>(CameraState.Closed)
   const [bottomPanelExpanded, setBottomPanelExpanded] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  const [{
+    recordUntil,
+    recordEvery,
+    recordEveryUnit,
+    recordLength,
+    recordLengthUnit,
+  }, setRecordingOptions] = useState<RecordingOptions>({
+    recordUntil: 0,
+    recordEvery: 0,
+    recordEveryUnit: TimeUnit.Seconds,
+    recordLength: 0,
+    recordLengthUnit: TimeUnit.Seconds,
+  })
+
+  const username = useState(null)
+
+  useEffect(() => {
+    if (!username) {
+      // call server side action to retrieve username
+    }
+  }, [username])
 
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
@@ -32,7 +75,7 @@ const CameraPage = () => {
       await openStream(videoRef.current)
       setCameraState(CameraState.Opened)
     } catch (error) {
-      if (error instanceof Error){
+      if (error instanceof Error) {
         setError(error.message)
       }
       setCameraState(CameraState.Closed)
@@ -43,22 +86,52 @@ const CameraPage = () => {
     if (cameraState !== CameraState.Opened || !videoRef.current) {
       return
     }
-    
+
     const stream = videoRef.current.srcObject as MediaStream
     stream.getTracks().forEach(track => track.stop())
     videoRef.current.srcObject = null
     setCameraState(CameraState.Closed)
   }
 
+  const updateRecordingDuration = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.valueAsNumber
+    console.log("recording until value", new Date(value).toString())
+    console.log("current time", new Date(Date.now()).toString())
+    setRecordingOptions(opt => ({ ...opt, recordUntil: value }))
+  }
+
+  const startRecording = () => {
+    if (cameraState !== CameraState.Opened || !videoRef.current) {
+      console.log("camera not found")
+      return
+    }
+
+    const stream = videoRef.current.srcObject as MediaStream
+    const intvId = window.setInterval(async () => {
+      const currTime = Date.now()
+      console.log("currTime", currTime)
+      if (currTime > recordUntil) {
+        window.clearInterval(intvId)
+        console.log('recording finished')
+        return;
+      }
+      console.log("recording")
+      const vidBlob = await recordStream(stream, recordLength * UNIT_VALUES_TO_MS[recordLengthUnit])
+      // get user name from server, and then upload video to server
+      console.log(uploadVideo(vidBlob))
+
+    }, recordEvery * UNIT_VALUES_TO_MS[recordEveryUnit])
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-between px-10 py-20" >
-      <video 
+      <video
         ref={videoRef}
-        className="w-full max-w-2xl rounded" 
-        autoPlay 
-        muted 
+        className="w-full max-w-2xl rounded"
+        autoPlay
+        muted
         playsInline
-        poster={cameraState === CameraState.Opened? "": posterUrl}
+        poster={cameraState === CameraState.Opened ? "" : posterUrl}
       ></video>
 
       <div className="absolute flex flex-col items-center bg-zinc-900/90 rounded-t-xl w-full bottom-0 py-2 px-5">
@@ -66,50 +139,79 @@ const CameraPage = () => {
           <h2 className="font-bold mb-4">Recording Options</h2>
           <div className="flex flex-row justify-between w-full py-2">
             <label>Record Until</label>
-            <Input type="datetime-local" inputSize={InputSize.Large} />
+            <Input
+              type="datetime-local"
+              inputSize={InputSize.Large}
+              onChange={updateRecordingDuration}
+            />
           </div>
           <div className="flex flex-row justify-between w-full py-2">
             <label>Record Every</label>
             <span>
-              <Input name="intervalValue" type="number" inputSize={InputSize.Small} className="mx-2" />
-              <Select name="unit">
-                <option value="seconds">Seconds</option>
-                <option value="minutes">Minutes</option>
-                <option value="hours">Hours</option>
+              <Input
+                name="intervalValue"
+                type="number"
+                inputSize={InputSize.Small}
+                className="mx-2"
+                onChange={(event) => setRecordingOptions(opt => ({
+                  ...opt,
+                  recordEvery: event.target.valueAsNumber,
+                }))}
+              />
+
+              <Select name="unit" onChange={event => setRecordingOptions(opt => ({
+                ...opt,
+                recordEveryUnit: event.target.value as TimeUnit,
+              }))}>
+                <option value={TimeUnit.Seconds}>Seconds</option>
+                <option value={TimeUnit.Minutes}>Minutes</option>
+                <option value={TimeUnit.Hours}>Hours</option>
               </Select>
             </span>
           </div>
           <div className="flex flex-row justify-between w-full py-2">
             <label>Record Until</label>
             <span>
-              <Input name="lengthValue" type="number" inputSize={InputSize.Small} className="mx-2" />
-              <Select name="unit">
-                <option value="seconds">Seconds</option>
-                <option value="minutes">Minutes</option>
-                <option value="hours">Hours</option>
+              <Input
+                name="lengthValue"
+                type="number"
+                inputSize={InputSize.Small}
+                className="mx-2"
+                onChange={(event) => setRecordingOptions(opt => ({
+                  ...opt,
+                  recordLength: event.target.valueAsNumber,
+                }))}
+              />
+              <Select name="unit" onChange={event => setRecordingOptions(opt => ({
+                ...opt,
+                recordLengthUnit: event.target.value as TimeUnit,
+              }))}>
+                <option value={TimeUnit.Seconds}>Seconds</option>
+                <option value={TimeUnit.Minutes}>Minutes</option>
+                <option value={TimeUnit.Hours}>Hours</option>
               </Select>
             </span>
           </div>
         </>)}
 
-        { isCamOpen? (<>
-          <div className="flex flex-row justify-around"> 
-            <Button size={ButtonSize.Medium} confirm >
+        {isCamOpen ? (<>
+          <div className="flex flex-row justify-around">
+            <Button size={ButtonSize.Medium} confirm onClick={() => startRecording()}>
               Start
             </Button>
             <Button size={ButtonSize.Large} danger onClick={closeCamera} >
               Close Camera
             </Button>
             <Button size={ButtonSize.Small} onClick={() => setBottomPanelExpanded(exp => !exp)}>
-              {bottomPanelExpanded? "-": "+"}
+              {bottomPanelExpanded ? "-" : "+"}
             </Button>
           </div>
-        </>): (<Button size={ButtonSize.Large} onClick={openCamera} >
+        </>) : (<Button size={ButtonSize.Large} onClick={openCamera} >
           Open Camera
         </Button>)}
-        
+
       </div>
-      
+
     </main>
   )
 }
