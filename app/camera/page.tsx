@@ -41,6 +41,7 @@ const CameraPage = () => {
   const [recorderId, setRecorderId] = useState<number | null>(null)
   const [bottomPanelExpanded, setBottomPanelExpanded] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   const [{
     recordUntil,
@@ -143,6 +144,23 @@ const CameraPage = () => {
     setRecorderId(null)
   }
 
+  const takeScreenshot = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      return
+    }
+
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight)
+    const imgData = canvas.toDataURL('image/png')
+    const link = document.createElement('a')
+    link.download = 'screenshot.png'
+    link.href = imgData
+    link.click()
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-between px-10 py-20" >
       <video
@@ -153,6 +171,8 @@ const CameraPage = () => {
         playsInline
         poster={cameraState === CameraState.Opened ? "" : posterUrl}
       ></video>
+
+      <canvas className="hidden" ref={canvasRef}></canvas>
 
       <div className="absolute flex flex-col items-center bg-zinc-900/90 rounded-t-xl w-full bottom-0 py-2 px-5">
         {bottomPanelExpanded && (<>
@@ -239,6 +259,7 @@ const CameraPage = () => {
             {!recorderId && (<Button confirm onClick={() => startRecording()}>
               Start
             </Button>)}
+            <Button onClick={() => takeScreenshot()}>Screenshot</Button>
             <Button danger onClick={recorderId ? stopRecording : closeCamera} >
               {recorderId ? 'Stop Recording' : 'Close Camera'}
             </Button>
