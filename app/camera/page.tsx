@@ -1,21 +1,16 @@
 'use client'
 import { Button, ButtonSize } from '@/components/Button'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { openStream, recordStream } from './helpers'
 import { Input, InputSize } from '@/components/Input'
 import { Select } from '@/components/Select'
-import { uploadVideo } from './actions'
+import { getUploadUrl } from './actions'
 
 
 enum CameraState {
   Closed,
   Opening,
   Opened,
-}
-
-enum RecorderState {
-  Idle,
-  Recording,
 }
 
 enum TimeUnit {
@@ -95,6 +90,23 @@ const CameraPage = () => {
     setCameraState(CameraState.Closed)
   }
 
+  const recordAndUpload = async (stream: MediaStream) => {
+    try {
+      const lengthInMs = recordLength * UNIT_VALUES_TO_MS[recordLengthUnit]
+      const vidBlob = await recordStream(stream, lengthInMs)
+      const uploadUrl = await getUploadUrl()
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        body: vidBlob,
+        mode: 'cors',
+      })
+      return uploadResponse
+    } catch (error) {
+      if (error instanceof Error) {
+        setError(error.message)
+      }
+    }
+  }
 
   const startRecording = () => {
     if (cameraState !== CameraState.Opened || !videoRef.current || recorderId || !recordEvery || !recordLength) {
@@ -106,12 +118,11 @@ const CameraPage = () => {
     console.log(`recording every ${recordEvery} ${recordEveryUnit} for ${recordLength} ${recordLengthUnit}, for ${recordUntil * UNIT_VALUES_TO_MS[recordUntilUnit] / (recordEvery * UNIT_VALUES_TO_MS[recordEveryUnit])} times`)
 
     const stream = videoRef.current.srcObject as MediaStream
-    const intvId = window.setInterval(async () => {
-      const vidBlob = await recordStream(stream, recordLength * UNIT_VALUES_TO_MS[recordLengthUnit])
-      // get user name from server, and then upload video to server
-      console.log(vidBlob.size)
-
-    }, recordEvery * UNIT_VALUES_TO_MS[recordEveryUnit])
+    recordAndUpload(stream)
+    const intvId = window.setInterval(
+      () => recordAndUpload(stream),
+      recordEvery * UNIT_VALUES_TO_MS[recordEveryUnit]
+    )
 
     setRecorderId(intvId)
 
@@ -152,6 +163,7 @@ const CameraPage = () => {
               <Input
                 name="totalTimeValue"
                 type="number"
+                min={0}
                 inputSize={InputSize.XSmall}
                 className="mx-2"
                 value={recordUntil}
