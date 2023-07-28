@@ -5,6 +5,7 @@ import { openStream, recordStream } from './helpers'
 import { Input, InputSize } from '@/components/Input'
 import { Select } from '@/components/Select'
 import { getUploadUrl } from './actions'
+import { RecordingControls } from './RecordingControls'
 
 
 enum CameraState {
@@ -59,6 +60,8 @@ const CameraPage = () => {
     recordLengthUnit: TimeUnit.Seconds,
   })
 
+  const showBroadcastingPanel = useState(false)
+
 
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
@@ -91,10 +94,9 @@ const CameraPage = () => {
     setCameraState(CameraState.Closed)
   }
 
-  const recordAndUpload = async (stream: MediaStream) => {
+  const recordAndUpload = async (stream: MediaStream, lengthMs: number) => {
     try {
-      const lengthInMs = recordLength * UNIT_VALUES_TO_MS[recordLengthUnit]
-      const vidBlob = await recordStream(stream, lengthInMs)
+      const vidBlob = await recordStream(stream, lengthMs)
       const uploadUrl = await getUploadUrl()
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
@@ -109,20 +111,23 @@ const CameraPage = () => {
     }
   }
 
-  const startRecording = () => {
-    if (cameraState !== CameraState.Opened || !videoRef.current || recorderId || !recordEvery || !recordLength) {
+  const startRecording = (
+    untilMs: number,
+    intervalMs: number,
+    lengthMs: number
+  ) => {
+    if (cameraState !== CameraState.Opened || !videoRef.current || recorderId || !untilMs || !lengthMs) {
       console.log("camera not found")
       return
     }
 
     // log some meta info
-    console.log(`recording every ${recordEvery} ${recordEveryUnit} for ${recordLength} ${recordLengthUnit}, for ${recordUntil * UNIT_VALUES_TO_MS[recordUntilUnit] / (recordEvery * UNIT_VALUES_TO_MS[recordEveryUnit])} times`)
 
     const stream = videoRef.current.srcObject as MediaStream
-    recordAndUpload(stream)
+    recordAndUpload(stream, lengthMs)
     const intvId = window.setInterval(
-      () => recordAndUpload(stream),
-      recordEvery * UNIT_VALUES_TO_MS[recordEveryUnit]
+      () => recordAndUpload(stream, lengthMs),
+      intervalMs
     )
 
     setRecorderId(intvId)
@@ -131,7 +136,7 @@ const CameraPage = () => {
       window.clearInterval(intvId)
       setRecorderId(null)
       return;
-    }, recordUntil * UNIT_VALUES_TO_MS[recordUntilUnit])
+    }, untilMs)
 
   }
 
@@ -175,99 +180,16 @@ const CameraPage = () => {
       <canvas className="hidden" ref={canvasRef}></canvas>
 
       <div className="absolute flex flex-col items-center bg-zinc-900/90 rounded-t-xl w-full bottom-0 py-2 px-5">
-        {bottomPanelExpanded && (<>
-          <h2 className="font-bold mb-4">Recording Options</h2>
-          <div className="flex flex-row justify-between w-full py-2">
-            <label>Record Until</label>
-            <span>
-              <Input
-                name="totalTimeValue"
-                type="number"
-                min={0}
-                inputSize={InputSize.XSmall}
-                className="mx-2"
-                value={recordUntil}
-                onChange={(event) => setRecordingOptions(opt => ({
-                  ...opt,
-                  recordUntil: event.target.valueAsNumber,
-                }))}
-              />
-
-              <Select name="unit" onChange={event => setRecordingOptions(opt => ({
-                ...opt,
-                recordUntilUnit: event.target.value as TimeUnit,
-              }))}>
-                <option value={TimeUnit.Seconds}>Seconds</option>
-                <option value={TimeUnit.Minutes}>Minutes</option>
-                <option value={TimeUnit.Hours}>Hours</option>
-              </Select>
-            </span>
-          </div>
-          <div className="flex flex-row justify-between w-full py-2">
-            <label>Record Every</label>
-            <span>
-              <Input
-                name="intervalValue"
-                type="number"
-                inputSize={InputSize.XSmall}
-                className="mx-2"
-                value={recordEvery}
-                onChange={(event) => setRecordingOptions(opt => ({
-                  ...opt,
-                  recordEvery: event.target.valueAsNumber,
-                }))}
-              />
-
-              <Select name="unit" onChange={event => setRecordingOptions(opt => ({
-                ...opt,
-                recordEveryUnit: event.target.value as TimeUnit,
-              }))}>
-                <option value={TimeUnit.Seconds}>Seconds</option>
-                <option value={TimeUnit.Minutes}>Minutes</option>
-                <option value={TimeUnit.Hours}>Hours</option>
-              </Select>
-            </span>
-          </div>
-          <div className="flex flex-row justify-between w-full py-2">
-            <label>Record Length</label>
-            <span>
-              <Input
-                name="lengthValue"
-                type="number"
-                inputSize={InputSize.XSmall}
-                className="mx-2"
-                onChange={(event) => setRecordingOptions(opt => ({
-                  ...opt,
-                  recordLength: event.target.valueAsNumber,
-                }))}
-                value={recordLength}
-              />
-              <Select name="unit" onChange={event => setRecordingOptions(opt => ({
-                ...opt,
-                recordLengthUnit: event.target.value as TimeUnit,
-              }))}>
-                <option value={TimeUnit.Seconds}>Seconds</option>
-                <option value={TimeUnit.Minutes}>Minutes</option>
-                <option value={TimeUnit.Hours}>Hours</option>
-              </Select>
-            </span>
-          </div>
-        </>)}
-
-        {isCamOpen ? (<>
-          <div className="flex flex-row justify-around">
-            {!recorderId && (<Button confirm onClick={() => startRecording()}>
-              Start
-            </Button>)}
-            <Button onClick={() => takeScreenshot()}>Screenshot</Button>
-            <Button danger onClick={recorderId ? stopRecording : closeCamera} >
-              {recorderId ? 'Stop' : 'Close'}
-            </Button>
-            <Button size={ButtonSize.Small} onClick={() => setBottomPanelExpanded(exp => !exp)}>
-              {bottomPanelExpanded ? "-" : "+"}
-            </Button>
-          </div>
-        </>) : (<Button size={ButtonSize.Large} onClick={openCamera} >
+        {bottomPanelExpanded && (
+          <RecordingControls
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            takeScreenshot={takeScreenshot}
+            closeCamera={closeCamera}
+            isRecording={recorderId !== null}
+          />
+        )}
+        {!isCamOpen && (<Button size={ButtonSize.Large} onClick={openCamera} >
           Open Camera
         </Button>)}
 
