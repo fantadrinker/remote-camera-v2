@@ -97,7 +97,7 @@ const CameraPage = () => {
       const vidBlob = await recordStream(stream, lengthInMs)
       const uploadUrl = await getUploadUrl()
       const uploadResponse = await fetch(uploadUrl, {
-        method: 'POST',
+        method: 'PUT',
         body: vidBlob,
         mode: 'cors',
       })
@@ -261,7 +261,7 @@ const CameraPage = () => {
             </Button>)}
             <Button onClick={() => takeScreenshot()}>Screenshot</Button>
             <Button danger onClick={recorderId ? stopRecording : closeCamera} >
-              {recorderId ? 'Stop Recording' : 'Close Camera'}
+              {recorderId ? 'Stop' : 'Close'}
             </Button>
             <Button size={ButtonSize.Small} onClick={() => setBottomPanelExpanded(exp => !exp)}>
               {bottomPanelExpanded ? "-" : "+"}
