@@ -2,8 +2,6 @@
 import { Button, ButtonSize } from '@/components/Button'
 import React, { useRef, useState } from 'react'
 import { openStream, recordStream } from './helpers'
-import { Input, InputSize } from '@/components/Input'
-import { Select } from '@/components/Select'
 import { getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
 
@@ -14,28 +12,6 @@ enum CameraState {
   Opened,
 }
 
-enum TimeUnit {
-  Seconds = 'seconds',
-  Minutes = 'minutes',
-  Hours = 'hours',
-}
-
-interface RecordingOptions {
-  recordUntil: number
-  recordUntilUnit: TimeUnit
-  recordEvery: number
-  recordEveryUnit: TimeUnit
-  recordLength: number
-  recordLengthUnit: TimeUnit
-}
-
-const UNIT_VALUES_TO_MS = Object.freeze({
-  [TimeUnit.Seconds]: 1000,
-  [TimeUnit.Minutes]: 1000 * 60,
-  [TimeUnit.Hours]: 1000 * 60 * 60,
-})
-
-
 const CameraPage = () => {
   const [error, setError] = useState("")
   const [cameraState, setCameraState] = useState<CameraState>(CameraState.Closed)
@@ -43,25 +19,6 @@ const CameraPage = () => {
   const [bottomPanelExpanded, setBottomPanelExpanded] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  const [{
-    recordUntil,
-    recordUntilUnit,
-    recordEvery,
-    recordEveryUnit,
-    recordLength,
-    recordLengthUnit,
-  }, setRecordingOptions] = useState<RecordingOptions>({
-    recordUntil: 0,
-    recordUntilUnit: TimeUnit.Seconds,
-    recordEvery: 0,
-    recordEveryUnit: TimeUnit.Seconds,
-    recordLength: 0,
-    recordLengthUnit: TimeUnit.Seconds,
-  })
-
-  const showBroadcastingPanel = useState(false)
-
 
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
@@ -120,8 +77,6 @@ const CameraPage = () => {
       console.log("camera not found")
       return
     }
-
-    // log some meta info
 
     const stream = videoRef.current.srcObject as MediaStream
     recordAndUpload(stream, lengthMs)

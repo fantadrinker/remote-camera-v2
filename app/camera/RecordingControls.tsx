@@ -1,10 +1,8 @@
 
-import { Button, ButtonSize } from '@/components/Button'
-import React, { useRef, useState } from 'react'
-import { openStream, recordStream } from './helpers'
+import { Button } from '@/components/Button'
+import React, { useState } from 'react'
 import { Input, InputSize } from '@/components/Input'
 import { Select } from '@/components/Select'
-import { getUploadUrl } from './actions'
 
 enum TimeUnit {
   Seconds = 'seconds',
@@ -46,7 +44,6 @@ export function RecordingControls({
   closeCamera,
   isRecording
 }: RecordingControlsProps) {
-  const [error, setError] = useState("")
   const [{
     recordUntil,
     recordUntilUnit,
