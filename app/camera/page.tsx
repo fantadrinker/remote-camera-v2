@@ -4,6 +4,7 @@ import React, { useRef, useState } from 'react'
 import { openStream, recordStream } from './helpers'
 import { getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
+import { StreamingControls } from './StreamingControls'
 
 
 enum CameraState {
@@ -17,6 +18,7 @@ const CameraPage = () => {
   const [cameraState, setCameraState] = useState<CameraState>(CameraState.Closed)
   const [recorderId, setRecorderId] = useState<number | null>(null)
   const [bottomPanelExpanded, setBottomPanelExpanded] = useState(true)
+  const [showRecordingMenu, setShowRecordingMenu] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -135,14 +137,20 @@ const CameraPage = () => {
       <canvas className="hidden" ref={canvasRef}></canvas>
 
       <div className="absolute flex flex-col items-center bg-zinc-900/90 rounded-t-xl w-full bottom-0 py-2 px-5">
-        {bottomPanelExpanded && (
-          <RecordingControls
+        {bottomPanelExpanded && (<>
+          <div className="flex flex-row justify-between w-full py-2">
+            <h2 className="font-bold mb-4">{showRecordingMenu ? "Recording Options" : "Streaming Options"}</h2>
+            <label className="mb-2">recording Menu</label>
+            <input type="checkbox" checked={showRecordingMenu} onChange={() => setShowRecordingMenu(!showRecordingMenu)} />
+          </div>
+          {showRecordingMenu ? <RecordingControls
             startRecording={startRecording}
             stopRecording={stopRecording}
             takeScreenshot={takeScreenshot}
             closeCamera={closeCamera}
             isRecording={recorderId !== null}
-          />
+          /> : <StreamingControls />}
+        </>
         )}
         {!isCamOpen && (<Button size={ButtonSize.Large} onClick={openCamera} >
           Open Camera

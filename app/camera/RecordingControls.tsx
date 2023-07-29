@@ -60,7 +60,6 @@ export function RecordingControls({
     recordLengthUnit: TimeUnit.Seconds,
   })
   return (<>
-    <h2 className="font-bold mb-4">Recording Options</h2>
     <div className="flex flex-row justify-between w-full py-2">
       <label>Record Until</label>
       <span>
