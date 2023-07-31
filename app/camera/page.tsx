@@ -2,9 +2,10 @@
 import { Button, ButtonSize } from '@/components/Button'
 import React, { useRef, useState } from 'react'
 import { openStream, recordStream } from './helpers'
-import { getUploadUrl } from './actions'
+import { getUserName, getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
 import { StreamingControls } from './StreamingControls'
+import { BroadcastChannel, SignalChannel } from '@/lib/SignalChannel'
 
 
 enum CameraState {
@@ -21,6 +22,8 @@ const CameraPage = () => {
   const [showRecordingMenu, setShowRecordingMenu] = useState(true)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [signalChannel, setSignalChannel] = useState<BroadcastChannel | null>(null)
+  const [isStreaming, setIsStreaming] = useState<boolean>(false)
 
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
@@ -123,6 +126,33 @@ const CameraPage = () => {
     link.click()
   }
 
+  function startStreaming() {
+    if (!videoRef.current) {
+      console.log("no video ref")
+      return
+    }
+    const username = getUserName()
+    if (!username) {
+      console.log("no username")
+      return
+    }
+    let chan = signalChannel
+    if (!chan) {
+      chan = new BroadcastChannel(username, videoRef.current.srcObject as MediaStream)
+      setSignalChannel(chan)
+    }
+    chan.connect()
+    setIsStreaming(true)
+  }
+
+  function stopStreaming() {
+    setIsStreaming(false)
+    if (!signalChannel) {
+      return
+    }
+    signalChannel.close()
+  }
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-between px-10 py-20" >
       <video
@@ -137,7 +167,7 @@ const CameraPage = () => {
       <canvas className="hidden" ref={canvasRef}></canvas>
 
       <div className="absolute flex flex-col items-center bg-zinc-900/90 rounded-t-xl w-full bottom-0 py-2 px-5">
-        {bottomPanelExpanded && (<>
+        {bottomPanelExpanded && isCamOpen && (<>
           <div className="flex flex-row justify-between w-full py-2">
             <h2 className="font-bold mb-4">{showRecordingMenu ? "Recording Options" : "Streaming Options"}</h2>
             <label className="mb-2">recording Menu</label>
@@ -149,7 +179,12 @@ const CameraPage = () => {
             takeScreenshot={takeScreenshot}
             closeCamera={closeCamera}
             isRecording={recorderId !== null}
-          /> : <StreamingControls />}
+          /> : <StreamingControls
+            closeCamera={closeCamera}
+            startStreaming={startStreaming}
+            stopStreaming={stopStreaming}
+            isStreaming={isStreaming}
+          />}
         </>
         )}
         {!isCamOpen && (<Button size={ButtonSize.Large} onClick={openCamera} >
