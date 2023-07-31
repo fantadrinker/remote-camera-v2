@@ -1,4 +1,4 @@
-
+import { cookies } from "next/dist/client/components/headers";
 
 export const getUploadUrlClient = async (username: string, data: Blob) => {
   console.log('uploadvideo', data)
