@@ -36,6 +36,13 @@ const getRTCConfig = async () => {
   }
 }
 
+export enum StreamingState {
+  NotStreaming,
+  Connecting,
+  Streaming,
+  Ending,
+}
+
 export class SignalChannel extends EventTarget {
   conn: WebSocket | null = null
   broadcastID: string
@@ -116,6 +123,12 @@ export class BroadcastChannel extends SignalChannel {
     })
     this.stream = stream
     this.eventListeners = {
+      // INIT_SUCCESS
+      init_success: (data: any) => {
+        const { broadcastId } = data
+        this.broadcastID = broadcastId
+        this.dispatchEvent(new Event('connected'))
+      },
       // VIEWER_MESSAGE
       viewer_message: async (data: any) => {
         if (data.type === 'offer') {

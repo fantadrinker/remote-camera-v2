@@ -1,28 +1,41 @@
-import { Button } from "@/components/Button";
 import React from "react";
+import { Button } from "@/components/Button";
+import { StreamingState } from "@/lib/SignalChannel";
 
 interface StreamingControlsProps {
   closeCamera: () => void;
   startStreaming: () => void;
   stopStreaming: () => void;
-  isStreaming: boolean;
+  streamingState: StreamingState;
+  streamID: string;
 }
 
 export function StreamingControls({
   closeCamera,
   startStreaming,
   stopStreaming,
-  isStreaming,
+  streamingState,
+  streamID,
 }: StreamingControlsProps) {
-  function buttonClick() {
+
+  const isStreaming = streamingState === StreamingState.Streaming;
+  const isNotStreaming = streamingState === StreamingState.NotStreaming;
+  const isConnecting = streamingState === StreamingState.Connecting;
+
+  function toggleStream() {
     if (isStreaming) {
       stopStreaming();
-    } else {
+    } else if (isNotStreaming) {
       startStreaming();
     }
   }
+
   return (<>
-    <Button onClick={buttonClick}>
+    {isStreaming && streamID && (<div>
+      <span>Streaming...</span>
+      <input disabled type="text" value={streamID} />
+    </div>)}
+    <Button disabled={isConnecting} onClick={toggleStream}>
       {isStreaming ? 'Stop Streaming' : 'Start Streaming'}
     </Button>
     {!isStreaming && <Button onClick={closeCamera}>Close Camera</Button>}

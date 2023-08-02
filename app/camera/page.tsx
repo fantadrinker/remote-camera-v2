@@ -5,7 +5,7 @@ import { openStream, recordStream } from './helpers'
 import { getUserName, getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
 import { StreamingControls } from './StreamingControls'
-import { BroadcastChannel, SignalChannel } from '@/lib/SignalChannel'
+import { BroadcastChannel, StreamingState } from '@/lib/SignalChannel'
 
 
 enum CameraState {
@@ -23,7 +23,8 @@ const CameraPage = () => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [signalChannel, setSignalChannel] = useState<BroadcastChannel | null>(null)
-  const [isStreaming, setIsStreaming] = useState<boolean>(false)
+  const [streamingState, setStreamingState] = useState<StreamingState>(StreamingState.NotStreaming)
+  const [streamID, setStreamID] = useState<string>("")
 
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
@@ -141,12 +142,20 @@ const CameraPage = () => {
       chan = new BroadcastChannel(username, videoRef.current.srcObject as MediaStream)
       setSignalChannel(chan)
     }
+    chan.addEventListener('connected', () => {
+      if (chan) {
+        setStreamID(chan.broadcastID);
+        setStreamingState(StreamingState.Streaming)
+      } else {
+        setStreamingState(StreamingState.NotStreaming)
+      }
+    })
     chan.connect()
-    setIsStreaming(true)
+    setStreamingState(StreamingState.Connecting)
   }
 
   function stopStreaming() {
-    setIsStreaming(false)
+    setStreamingState(StreamingState.NotStreaming)
     if (!signalChannel) {
       return
     }
@@ -183,7 +192,8 @@ const CameraPage = () => {
             closeCamera={closeCamera}
             startStreaming={startStreaming}
             stopStreaming={stopStreaming}
-            isStreaming={isStreaming}
+            streamingState={streamingState}
+            streamID={streamID}
           />}
         </>
         )}
