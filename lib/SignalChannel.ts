@@ -125,12 +125,13 @@ export class BroadcastChannel extends SignalChannel {
     this.eventListeners = {
       // INIT_SUCCESS
       init_success: (data: any) => {
-        const { broadcastId } = data
-        this.broadcastID = broadcastId
-        this.dispatchEvent(new Event('connected'))
+        this.dispatchEvent(new CustomEvent('connected', { detail: data }))
       },
       // VIEWER_MESSAGE
       viewer_message: async (data: any) => {
+        if (!data) {
+          return
+        }
         if (data.type === 'offer') {
           const { session_id, offer } = data
           const rtcConfig = await getRTCConfig()

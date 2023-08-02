@@ -22,9 +22,8 @@ export function RemoteStream({
   const isConnected = status === RemoteStreamStatus.Connected;
 
   function connectStream() {
-    console.log(111)
     const dummyStream = dummyCanvas.current!.captureStream(15);
-    const channel = new ViewerChannel(id, localVideo.current!, dummyStream);
+    const channel = new ViewerChannel(decodeURIComponent(id), localVideo.current!, dummyStream);
     channel.addEventListener('initialized', () => {
       channel.connect()
       setStatus(RemoteStreamStatus.Connecting);
@@ -35,6 +34,13 @@ export function RemoteStream({
       setStatus(RemoteStreamStatus.Connected);
       console.log('got track', track);
     })
+  }
+
+  function disconnectStream() {
+    if (signalChannel) {
+      signalChannel.close()
+    }
+    setStatus(RemoteStreamStatus.Default);
   }
 
   return (<>
@@ -52,6 +58,6 @@ export function RemoteStream({
       {...(isConnecting ? { disabled: true } : {})}
     >
       Connect Stream
-    </Button> : <Button> Disconnect </Button>}
+    </Button> : <Button onClick={() => disconnectStream()}> Disconnect </Button>}
   </>)
 }

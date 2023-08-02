@@ -24,7 +24,6 @@ const CameraPage = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [signalChannel, setSignalChannel] = useState<BroadcastChannel | null>(null)
   const [streamingState, setStreamingState] = useState<StreamingState>(StreamingState.NotStreaming)
-  const [streamID, setStreamID] = useState<string>("")
 
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
@@ -127,24 +126,18 @@ const CameraPage = () => {
     link.click()
   }
 
-  function startStreaming() {
+  function startStreaming(streamID: string) {
     if (!videoRef.current) {
       console.log("no video ref")
       return
     }
-    const username = getUserName()
-    if (!username) {
-      console.log("no username")
-      return
-    }
     let chan = signalChannel
     if (!chan) {
-      chan = new BroadcastChannel(username, videoRef.current.srcObject as MediaStream)
+      chan = new BroadcastChannel(streamID, videoRef.current.srcObject as MediaStream)
       setSignalChannel(chan)
     }
     chan.addEventListener('connected', () => {
       if (chan) {
-        setStreamID(chan.broadcastID);
         setStreamingState(StreamingState.Streaming)
       } else {
         setStreamingState(StreamingState.NotStreaming)
@@ -193,7 +186,6 @@ const CameraPage = () => {
             startStreaming={startStreaming}
             stopStreaming={stopStreaming}
             streamingState={streamingState}
-            streamID={streamID}
           />}
         </>
         )}
