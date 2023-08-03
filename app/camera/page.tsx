@@ -192,9 +192,7 @@ const CameraPage = () => {
         {!isCamOpen && (<Button size={ButtonSize.Large} onClick={openCamera} >
           Open Camera
         </Button>)}
-
       </div>
-
     </main>
   )
 }

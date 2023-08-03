@@ -20,9 +20,9 @@ const getRTCConfig = async () => {
     return { iceServers }
   }
   try {
+    const apiKey = process.env.ICE_SERVER_API_KEY || process.env.NEXT_PUBLIC_ICE_SERVER_API_KEY
     const response = await fetch(
-      `https://remotecamrtc.metered.live/api/v1/turn/credentials?apiKey=${process.env.ICE_SERVER_API_KEY
-      }`
+      `https://remotecamrtc.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
     )
     // Saving the response in the iceServers array
     const turnServers: RTCIceServer[] = await response.json()
