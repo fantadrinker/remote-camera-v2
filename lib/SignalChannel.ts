@@ -15,7 +15,12 @@ const broadcastOfferOptions: RTCOfferOptions = {
 }
 
 const getRTCConfig = async () => {
-  const iceServers: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }]
+  const turnServer = {
+    urls: process.env.COTURN_URL || "",
+    username: process.env.COTURN_USERNAME,
+    credential: process.env.COTURN_CREDENTIAL,
+  }
+  const iceServers: RTCIceServer[] = [turnServer.urls ? turnServer : { urls: 'stun:stun.l.google.com:19302' }]
   if (process.env.NODE_ENV === 'development') {
     return { iceServers }
   }
@@ -135,11 +140,12 @@ export class BroadcastChannel extends SignalChannel {
         if (data.type === 'offer') {
           const { session_id, offer } = data
           const rtcConfig = await getRTCConfig()
-          this.pcs[session_id] = new RTCPeerConnection(rtcConfig)
+          const viewerPc = new RTCPeerConnection(rtcConfig)
+          this.pcs[session_id] = viewerPc
           stream.getTracks().forEach(track => {
-            this.pcs[session_id].addTrack(track, stream)
+            viewerPc.addTrack(track, stream)
           })
-          this.pcs[session_id].addEventListener('icecandidate', event => {
+          viewerPc.addEventListener('icecandidate', event => {
             if (event.candidate) {
               this.conn?.send(
                 JSON.stringify({
@@ -156,17 +162,19 @@ export class BroadcastChannel extends SignalChannel {
               )
             }
           })
-          this.pcs[session_id].addEventListener(
+          viewerPc.addEventListener(
             'connectionstatechange',
             event => {
-              if (this.pcs[session_id].connectionState === 'connected') {
-                console.log(
-                  'connection state change',
-                  event,
-                  this.pcs[session_id].connectionState
-                )
-              }
+              const state = this.pcs[session_id].connectionState
+              console.log(
+                'connection state change',
+                event,
+                state,
+              )
             })
+          viewerPc.addEventListener('icecandidateerror', event => {
+            console.log('ice candidate error', event)
+          })
           this.pcs[session_id].setRemoteDescription(offer)
           this.pcs[session_id].createAnswer().then(answer => {
             this.pcs[session_id].setLocalDescription(answer).then(() => {
@@ -285,18 +293,30 @@ export class ViewerChannel extends SignalChannel {
       })
       this.pc.addEventListener('track', async event => {
         console.log('track received', event, this.video)
+        this.video.onloadedmetadata = () => {
+          this.video.play()
+        }
         const [remoteStream] = event.streams
         this.video.srcObject = remoteStream
         this.dispatchEvent(new CustomEvent('track', { detail: remoteStream }))
       })
-      this.pc.addEventListener('connectionstatechange', () => {
-        if (this.pc?.connectionState === 'connected') {
+      this.pc.addEventListener('connectionstatechange', (event) => {
+        const state = this.pc?.connectionState
+        if (state === 'connected') {
           console.log('connected')
           this.conn?.send(JSON.stringify({
             action: 'viewersend',
             data: { message_type: 5 }
           })) // VIEWER_CONNECTED
+        } else if (state === 'failed') {
+          console.log(`connection failed: ${this.pc?.connectionState}`)
         }
+        this.dispatchEvent(new CustomEvent('connStateChange', {
+          detail: {
+            state,
+            event,
+          }
+        }))
       })
       this.dispatchEvent(new CustomEvent('initialized'))
     })

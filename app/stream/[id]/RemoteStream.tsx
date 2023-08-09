@@ -34,6 +34,10 @@ export function RemoteStream({
       setStatus(RemoteStreamStatus.Connected);
       console.log('got track', track);
     })
+
+    channel.addEventListener('connStateChange', (...details) => {
+      console.log('connStateChange', ...details);
+    })
   }
 
   function disconnectStream() {
