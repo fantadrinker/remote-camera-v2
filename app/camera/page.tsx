@@ -136,6 +136,9 @@ const CameraPage = () => {
       chan = new BroadcastChannel(streamID, videoRef.current.srcObject as MediaStream)
       setSignalChannel(chan)
     }
+    chan.addEventListener('connStateChange', (...info) => {
+      console.log("connStateChange", info)
+    })
     chan.addEventListener('connected', () => {
       if (chan) {
         setStreamingState(StreamingState.Streaming)
