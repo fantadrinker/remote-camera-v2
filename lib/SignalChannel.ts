@@ -16,9 +16,9 @@ const broadcastOfferOptions: RTCOfferOptions = {
 
 const getRTCConfig = async () => {
   const turnServer = {
-    urls: process.env.COTURN_URL || "",
-    username: process.env.COTURN_USERNAME,
-    credential: process.env.COTURN_CREDENTIAL,
+    urls: process.env.NEXT_PUBLIC_COTURN_URL || "",
+    username: process.env.NEXT_PUBLIC_COTURN_USERNAME,
+    credential: process.env.NEXT_PUBLIC_COTURN_CREDENTIAL,
   }
   if (!turnServer.urls) {
     console.log("no development turn server url")
