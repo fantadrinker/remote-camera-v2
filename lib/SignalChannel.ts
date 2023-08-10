@@ -20,6 +20,9 @@ const getRTCConfig = async () => {
     username: process.env.COTURN_USERNAME,
     credential: process.env.COTURN_CREDENTIAL,
   }
+  if (!turnServer.urls) {
+    console.log("no development turn server url")
+  }
   const iceServers: RTCIceServer[] = [turnServer.urls ? turnServer : { urls: 'stun:stun.l.google.com:19302' }]
   if (process.env.NODE_ENV === 'development') {
     return { iceServers }
