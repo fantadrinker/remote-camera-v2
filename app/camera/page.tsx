@@ -2,7 +2,7 @@
 import { Button, ButtonSize } from '@/components/Button'
 import React, { useRef, useState } from 'react'
 import { openStream, recordStream } from './helpers'
-import { getUserName, getUploadUrl } from './actions'
+import { getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
 import { StreamingControls } from './StreamingControls'
 import { BroadcastChannel, StreamingState } from '@/lib/SignalChannel'
@@ -131,11 +131,8 @@ const CameraPage = () => {
       console.log("no video ref")
       return
     }
-    let chan = signalChannel
-    if (!chan) {
-      chan = new BroadcastChannel(streamID, videoRef.current.srcObject as MediaStream)
-      setSignalChannel(chan)
-    }
+    const chan = new BroadcastChannel(streamID, videoRef.current.srcObject as MediaStream)
+    setSignalChannel(chan)
     chan.addEventListener('connStateChange', (...info) => {
       console.log("connStateChange", info)
     })
