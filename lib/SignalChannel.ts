@@ -141,6 +141,9 @@ export class BroadcastChannel extends SignalChannel {
           return
         }
         if (data.type === 'offer') {
+
+          console.log('offer received', data)
+
           const { session_id, offer } = data
           const rtcConfig = await getRTCConfig()
           const viewerPc = new RTCPeerConnection(rtcConfig)
@@ -204,14 +207,18 @@ export class BroadcastChannel extends SignalChannel {
           })
         } else if (data.type === 'icecandidate') {
           const { session_id, icecandidate } = data
+          const icObj = new RTCIceCandidate(icecandidate)
+          if (icObj.type !== 'relay') {
+            console.log('skipping relay candidate')
+          }
           if (!this.pcs[session_id]) {
             if (this.iceCandidatePool[session_id]) {
-              this.iceCandidatePool[session_id].push(icecandidate)
+              this.iceCandidatePool[session_id].push(icObj)
             } else {
-              this.iceCandidatePool[session_id] = [icecandidate]
+              this.iceCandidatePool[session_id] = [icObj]
             }
           } else {
-            this.pcs[session_id].addIceCandidate(icecandidate)
+            this.pcs[session_id].addIceCandidate(icObj)
           }
         }
       },
@@ -356,8 +363,14 @@ export class ViewerChannel extends SignalChannel {
             }
           })
         } else if (data.type === 'icecandidate') {
+          const { icecandidate } = data
+          const icObj = new RTCIceCandidate(icecandidate)
+          if (icObj.type !== 'relay') {
+            console.log('skipping relay candidate')
+          }
+
           if (this.pc?.remoteDescription) {
-            this.pc?.addIceCandidate(data.icecandidate).catch(err => {
+            this.pc?.addIceCandidate(icObj).catch(err => {
               console.log('icecandidate error')
               console.error(err)
             })
