@@ -2,6 +2,7 @@ export default class MotionCaptureProcessor {
   private _stream_in: MediaStream
   private _stream_out: MediaStream
   private _canvas: HTMLCanvasElement
+  private _offscreen: OffscreenCanvas
   private _generator:  MediaStreamTrackGenerator 
   private _processor: MediaStreamTrackProcessor
   private _data: Array<Blob> = []
@@ -17,10 +18,7 @@ export default class MotionCaptureProcessor {
     this._processor = new MediaStreamTrackProcessor({ track })
 
     // TODO: https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas#asynchronous_display_of_frames_produced_by_an_offscreencanvas
-    this._canvas = document.createElement('canvas')
-    document.body.appendChild(this._canvas)
-    this._canvas.width = vidw
-    this._canvas.height = vidh
+    this._offscreen = new OffscreenCanvas(vidw, vidh)
 
     this._transformer = new TransformStream({
       transform: (videoFrame, controller) => {
@@ -30,7 +28,7 @@ export default class MotionCaptureProcessor {
         // create new frame from canvas
         this.drawFrame(videoFrame)
         try {
-          const newFrame = new VideoFrame(this._canvas, { timestamp: videoFrame.timestamp })
+          const newFrame = new VideoFrame(this._offscreen, { timestamp: videoFrame.timestamp })
           // send new frame to controller
           videoFrame.close()
           controller.enqueue(newFrame)
@@ -44,19 +42,16 @@ export default class MotionCaptureProcessor {
 
   async drawFrame(videoFrame: VideoFrame) {
     const imgbmp = await createImageBitmap(videoFrame)
-    const ctx = this._canvas.getContext('2d')
+    const ctx = this._offscreen.getContext('2d')
     if (!ctx) throw new Error('could not get canvas context')
     ctx.save()
-    ctx.drawImage(imgbmp, 0, 0, this._canvas.width, this._canvas.height)
+    ctx.drawImage(imgbmp, 0, 0, this._offscreen.width, this._offscreen.height)
     ctx.restore()
   }
 
-  extractFrame() {
-    const imageData = this._canvas.toDataURL('image/png')
-    const link = document.createElement('a')
-    link.download = 'image.png'
-    link.href = imageData
-    link.click()
+  async extractFrame() {
+    const imageData = await this._offscreen.convertToBlob({ type: 'image/png' })
+    console.log(imageData)
   }
 
   viewData() {
