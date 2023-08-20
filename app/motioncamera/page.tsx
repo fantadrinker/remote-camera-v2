@@ -1,7 +1,7 @@
 'use client'
-import { Button, ButtonSize } from '@/components/Button'
+import { Button } from '@/components/Button'
 import React, { useEffect, useRef, useState } from 'react'
-import { openStream, openStreamNoVideoElement } from '../camera/helpers'
+import { openStreamNoVideoElement } from '../camera/helpers'
 import MotionCaptureProcessor from '@/lib/MotionCaptureProcessor'
 
 enum CameraState {
