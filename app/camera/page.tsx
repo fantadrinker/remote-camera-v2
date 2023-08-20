@@ -6,7 +6,7 @@ import { getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
 import { StreamingControls } from './StreamingControls'
 import { BroadcastChannel, StreamingState } from '@/lib/SignalChannel'
-
+import { MonitoringControls } from './MonitoringControls'
 
 enum CameraState {
   Closed,
@@ -14,12 +14,19 @@ enum CameraState {
   Opened,
 }
 
+enum MenuState {
+  Record,
+  Stream,
+  Monitor,
+}
+
 const CameraPage = () => {
   const [error, setError] = useState("")
   const [cameraState, setCameraState] = useState<CameraState>(CameraState.Closed)
   const [recorderId, setRecorderId] = useState<number | null>(null)
   const [bottomPanelExpanded, setBottomPanelExpanded] = useState(true)
-  const [showRecordingMenu, setShowRecordingMenu] = useState(true)
+  const [menuState, setMenuState] = useState<MenuState>(MenuState.Monitor)
+
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [signalChannel, setSignalChannel] = useState<BroadcastChannel | null>(null)
@@ -28,6 +35,8 @@ const CameraPage = () => {
   const posterUrl = 'https://as1.ftcdn.net/v2/jpg/02/95/94/94/1000_F_295949484_8BrlWkTrPXTYzgMn3UebDl1O13PcVNMU.jpg'
 
   const isCamOpen = cameraState === CameraState.Opened
+  const showRecordingMenu = menuState === MenuState.Record;
+  const showStreamingMenu = menuState === MenuState.Stream;
   const openCamera = async () => {
     if (cameraState !== CameraState.Closed || !videoRef.current) {
       return
@@ -173,24 +182,31 @@ const CameraPage = () => {
           <div className="flex flex-row justify-between w-full py-2">
             <h2 className="font-bold mb-4">{showRecordingMenu ? "Recording Options" : "Streaming Options"}</h2>
             <label className="mb-2">recording Menu</label>
-            <input type="checkbox" checked={showRecordingMenu} onChange={() => setShowRecordingMenu(!showRecordingMenu)} />
+            <input type="checkbox" checked={showRecordingMenu} onChange={() => setMenuState(MenuState.Record)} />
+            <input type="checkbox" checked={showStreamingMenu} onChange={() => setMenuState(MenuState.Stream)} />
           </div>
-          {showRecordingMenu ? <RecordingControls
+          {showRecordingMenu && <RecordingControls
             startRecording={startRecording}
             stopRecording={stopRecording}
             takeScreenshot={takeScreenshot}
             closeCamera={closeCamera}
             isRecording={recorderId !== null}
-          /> : <StreamingControls
+          /> }
+          {showStreamingMenu && <StreamingControls
             closeCamera={closeCamera}
             startStreaming={startStreaming}
             stopStreaming={stopStreaming}
             streamingState={streamingState}
           />}
+          {menuState === MenuState.Monitor && (
+            <MonitoringControls videoRef={videoRef.current} />
+          )}
         </>
         )}
-        {!isCamOpen && (<Button size={ButtonSize.Large} onClick={openCamera} >
+        {!isCamOpen ? (<Button size={ButtonSize.Large} onClick={openCamera} >
           Open Camera
+        </Button>): (<Button size={ButtonSize.Large} onClick={closeCamera} >
+          Close Camera
         </Button>)}
       </div>
     </main>
