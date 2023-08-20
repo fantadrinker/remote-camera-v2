@@ -1,7 +1,6 @@
 export default class MotionCaptureProcessor {
   private _stream_in: MediaStream
   private _stream_out: MediaStream
-  private _canvas: HTMLCanvasElement
   private _offscreen: OffscreenCanvas
   private _generator:  MediaStreamTrackGenerator 
   private _processor: MediaStreamTrackProcessor
@@ -21,14 +20,14 @@ export default class MotionCaptureProcessor {
     this._offscreen = new OffscreenCanvas(vidw, vidh)
 
     this._transformer = new TransformStream({
-      transform: (videoFrame, controller) => {
+      transform: async (videoFrame, controller) => {
         // draws the video frame as grayscale to off screen canvas
         videoFrame.width = videoFrame.displayWidth
         videoFrame.height = videoFrame.displayHeight
         // create new frame from canvas
         this.drawFrame(videoFrame)
         try {
-          const newFrame = new VideoFrame(this._offscreen, { timestamp: videoFrame.timestamp })
+          const newFrame = new VideoFrame(await this.extractFrame(), { timestamp: videoFrame.timestamp })
           // send new frame to controller
           videoFrame.close()
           controller.enqueue(newFrame)
@@ -50,8 +49,21 @@ export default class MotionCaptureProcessor {
   }
 
   async extractFrame() {
-    const imageData = await this._offscreen.convertToBlob({ type: 'image/png' })
-    console.log(imageData)
+    const ctx = this._offscreen.getContext('2d')
+    const imageData = ctx?.getImageData(0, 0, this._offscreen.width, this._offscreen.height)
+
+    // process image data
+    const grayScaleImage = imageData?.data.map((pixel, index) => {
+      if (index % 4 === 3) return pixel
+      const r = imageData.data[index]
+      const g = imageData.data[index + 1]
+      const b = imageData.data[index + 2]
+      const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      return gray
+    })
+
+    const encoded = await createImageBitmap(new ImageData(grayScaleImage!, this._offscreen.width, this._offscreen.height))
+    return encoded
   }
 
   viewData() {
