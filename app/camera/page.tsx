@@ -23,7 +23,7 @@ const CameraPage = () => {
   const [cameraState, setCameraState] = useState<CameraState>(CameraState.Closed)
   const [recorderId, setRecorderId] = useState<number | null>(null)
   const [bottomPanelExpanded, setBottomPanelExpanded] = useState(true)
-  const [menuState, setMenuState] = useState<MenuState>(MenuState.Monitor)
+  const [menuState, setMenuState] = useState<MenuState>(MenuState.Record)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
