@@ -6,7 +6,6 @@ import { getUploadUrl } from './actions'
 import { RecordingControls } from './RecordingControls'
 import { StreamingControls } from './StreamingControls'
 import { BroadcastChannel, StreamingState } from '@/lib/SignalChannel'
-import { MonitoringControls } from './MonitoringControls'
 
 enum CameraState {
   Closed,
@@ -17,7 +16,6 @@ enum CameraState {
 enum MenuState {
   Record,
   Stream,
-  Monitor,
 }
 
 const CameraPage = () => {
@@ -198,9 +196,6 @@ const CameraPage = () => {
             stopStreaming={stopStreaming}
             streamingState={streamingState}
           />}
-          {menuState === MenuState.Monitor && (
-            <MonitoringControls videoRef={videoRef.current} />
-          )}
         </>
         )}
         {!isCamOpen ? (<Button size={ButtonSize.Large} onClick={openCamera} >
