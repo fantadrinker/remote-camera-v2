@@ -2,7 +2,9 @@ export default class MotionCaptureProcessor {
   private _stream_in: MediaStream
   private _stream_out: MediaStream
   private _offscreen: OffscreenCanvas
+  // @ts-ignore 
   private _generator:  MediaStreamTrackGenerator 
+  // @ts-ignore
   private _processor: MediaStreamTrackProcessor
   private _data: Array<Blob> = []
 
@@ -13,7 +15,9 @@ export default class MotionCaptureProcessor {
     this._stream_out = new MediaStream()
 
     const track = stream_in.getVideoTracks()[0]
+    // @ts-ignore
     this._generator = new MediaStreamTrackGenerator({ kind: "video" });
+    // @ts-ignore
     this._processor = new MediaStreamTrackProcessor({ track })
 
     // TODO: https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas#asynchronous_display_of_frames_produced_by_an_offscreencanvas
